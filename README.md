@@ -4,10 +4,10 @@ The classic game snake in the terminal.
 ## TODO
 - use branches!
 - make fullscreen
-- clean up initilisation/end code
+- <s>clean up initilisation/end code</s>
 - make snake move on it's own
 - think about if threading is needed
-- comment and document code
+- <s>comment and </s>document code
 - write a nice README
 - add main loop
     - add food 
