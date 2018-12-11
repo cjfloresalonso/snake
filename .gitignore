@@ -1,0 +1,3 @@
+bin/snake
+src/snake.o
+*.o

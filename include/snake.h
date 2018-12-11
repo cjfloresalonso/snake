@@ -23,7 +23,6 @@ snake * init_snake(void);
 void add_food(snake *s);
 void update_snake(snake *s, DIRECTION direction);
 struct snake_segment *new_head(int16_t x, int16_t y, snake_segment *next);
-void draw_end_game(void);
 
 struct snake_segment
 {

@@ -18,10 +18,12 @@ int main(int argc, char **argv)
     // loop for movement
     do
     {
+        // get direction to move in
         attron(COLOR_PAIR(TEXT));
         char c = fgetc(stdin);
         attroff(COLOR_PAIR(TEXT));
 
+        // deal with input accordingly
         switch (c)
         {
         case 'd':
@@ -35,8 +37,6 @@ int main(int argc, char **argv)
             break;
         case 'q':
         case 'Q':
-            draw_end_game();
-            endwin();
             return 1;
         case 's':
             update_snake(s, S);
@@ -45,11 +45,12 @@ int main(int argc, char **argv)
             break;
         }
 
+        // flush the any charecters still in the stdin buffer
         fflush(stdin);
+
     } while (true);
 
-    draw_end_game();
-    return 0;
+    exit(EXIT_SUCCESS);
 }
 
 void init_prog(void)
@@ -63,8 +64,6 @@ void init_prog(void)
     curs_set(0);
     start_color();
 
-    atexit(&(endwin(void)));
-
     // initilise the colour pairs
     init_pair(BACKGROUND, COLOR_WHITE, COLOR_WHITE);
     init_pair(SNAKE, COLOR_BLACK, COLOR_GREEN);
@@ -73,10 +72,15 @@ void init_prog(void)
 
     // seed random numbers
     srand(time(NULL));
+
+    // add fucntions to exit
+    atexit((void (*)(void))endwin);
 }
 
 void init_board(snake *s)
 {
+    // draw background/board
+    // TODO: optimise this
     attron(COLOR_PAIR(BACKGROUND));
     move(0, 0);
     for (int i = 0; i < s->rows; i++)
@@ -94,18 +98,23 @@ void init_board(snake *s)
 
 snake *init_snake(void)
 {
+    // declare snake's memory
     snake *s = malloc(sizeof(snake));
 
     /// TODO: make random
+    // initilise segments of hte snake's body
     snake_segment *sn2 = new_head(5, 2, NULL);
     snake_segment *sn1 = new_head(4, 2, sn2);
     snake_segment *sn0 = new_head(3, 2, sn1);
 
+    // initilise snakes values
     s->rows = 15;
     s->cols = 20;
     s->head = sn0;
     s->tail = sn2;
 
+    // draw the segments
+    // BUG: not getting drawn initially
     attron(COLOR_PAIR(SNAKE));
 
     for (snake_segment *sptr = s->head;
@@ -120,6 +129,7 @@ snake *init_snake(void)
     // flush buffer
     refresh();
 
+    // return the snake
     return s;
 }
 
@@ -132,6 +142,7 @@ void update_snake(snake *s, DIRECTION direction)
         return;
     }
 
+    // add new head according to direction
     int new_x, new_y;
 
     switch (direction)
@@ -170,39 +181,39 @@ void update_snake(snake *s, DIRECTION direction)
     mvaddstr(s->head->y, 2 * s->head->x, PIECE);
     attroff(COLOR_PAIR(SNAKE));
 
-    // remove tail
+    // undrawn tail
     attron(COLOR_PAIR(BACKGROUND));
     mvaddstr(s->tail->y, (2 * s->tail->x), PIECE);
     attroff(COLOR_PAIR(BACKGROUND));
 
+    // remove tail
     snake_segment *new_last = s->head;
 
-    while (new_last && new_last->next && new_last->next->next)
-    {
-        new_last = new_last->next;
-    }
+    for (new_last = s->head; new_last && new_last->next &&
+            new_last->next->next;
+        new_last = new_last->next);
 
     free(s->tail);
+
+    // udpate tail
     s->tail = new_last;
     s->tail->next = NULL;
 
-    // flush buffer
+    // draw window
     refresh();
-}
-
-void draw_end_game(void)
-{
-    addch('\n');
 }
 
 snake_segment *new_head(int16_t x, int16_t y, snake_segment *next)
 {
+    // allocate the segments memory
     snake_segment *new = malloc(sizeof(snake_segment));
 
+    // set parameters
     new->x = x;
     new->y = y;
     new->next = next;
 
+    // return the segment
     return new;
 }
 
@@ -212,14 +223,11 @@ void add_food(snake *s)
     s->food_x = rand() % s->cols;
     s->food_y = rand() % s->rows;
 
-    FILE *log = fopen("log.txt", "a");
-    fprintf(log, "%d/%d\n%d/%d\n", s->food_x, s->cols, s->food_y, s->rows);
-    fclose(log);
-
-    // draw it
+    // draw food
     attron(COLOR_PAIR(FOOD));
     mvaddstr(s->food_y, 2 * s->food_x, PIECE);
     attroff(COLOR_PAIR(FOOD));
 
+    // flush screen
     refresh();
 }
