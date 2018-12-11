@@ -13,7 +13,7 @@ OBJS=$(patsubst  %.c,%.o,$(SRCS))
 all: snake
 
 snake: $(OBJS)
-		$(CC) -o $(ODIR)$@ $^ $(CFLAGS) $(LIBS)
+		$(CC) -o $(ODIR)/$@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 clean:
