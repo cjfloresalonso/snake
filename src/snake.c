@@ -8,34 +8,14 @@
 
 int main(int argc, char **argv)
 {
-    // init stuff
-    initscr();
-    atexit((void *)endwin());
-    cbreak();
-    curs_set(0);
-    noecho();
-    start_color();
-    init_pair(BACKGROUND, COLOR_WHITE, COLOR_WHITE);
-    init_pair(SNAKE, COLOR_BLACK, COLOR_GREEN);
-    init_pair(FOOD, COLOR_BLACK, COLOR_RED);
-    init_pair(TEXT, COLOR_WHITE, COLOR_BLACK);
-    srand(time(NULL));
+    init_prog();
 
-    snake_segment *sn2 = new_head(5, 2, NULL);
-    snake_segment *sn1 = new_head(4, 2, sn2);
-    snake_segment *sn0 = new_head(3, 2, sn1);
-    snake *s = malloc(sizeof(snake));
-
-    s->rows = 15;
-    s->cols = 20;
-    s->head = sn0;
-    s->tail = sn2;
-
+    // initilise the game
+    snake *s = init_snake();
     init_board(s);
-    init_snake(s);
-
     add_food(s);
 
+    // loop for movement
     do
     {
         attron(COLOR_PAIR(TEXT));
@@ -72,6 +52,29 @@ int main(int argc, char **argv)
     return 0;
 }
 
+void init_prog(void)
+{
+    // initilise the tui
+    initscr();
+
+    cbreak();
+    noecho();
+
+    curs_set(0);
+    start_color();
+
+    atexit(&(endwin(void)));
+
+    // initilise the colour pairs
+    init_pair(BACKGROUND, COLOR_WHITE, COLOR_WHITE);
+    init_pair(SNAKE, COLOR_BLACK, COLOR_GREEN);
+    init_pair(FOOD, COLOR_BLACK, COLOR_RED);
+    init_pair(TEXT, COLOR_WHITE, COLOR_BLACK);
+
+    // seed random numbers
+    srand(time(NULL));
+}
+
 void init_board(snake *s)
 {
     attron(COLOR_PAIR(BACKGROUND));
@@ -89,8 +92,20 @@ void init_board(snake *s)
     attroff(COLOR_PAIR(BACKGROUND));
 }
 
-void init_snake(snake *s)
+snake *init_snake(void)
 {
+    snake *s = malloc(sizeof(snake));
+
+    /// TODO: make random
+    snake_segment *sn2 = new_head(5, 2, NULL);
+    snake_segment *sn1 = new_head(4, 2, sn2);
+    snake_segment *sn0 = new_head(3, 2, sn1);
+
+    s->rows = 15;
+    s->cols = 20;
+    s->head = sn0;
+    s->tail = sn2;
+
     attron(COLOR_PAIR(SNAKE));
 
     for (snake_segment *sptr = s->head;
@@ -104,6 +119,8 @@ void init_snake(snake *s)
 
     // flush buffer
     refresh();
+
+    return s;
 }
 
 void update_snake(snake *s, DIRECTION direction)
