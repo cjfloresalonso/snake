@@ -1,10 +1,11 @@
 CC=gcc
 CFLAGS=-Iinclude -Isrc -Wall  -Wextra -ggdb3
 
-ODIR= ./build
+ODIR= ./bin
+BDIR= ./build
 LDIR = ./lib
 
-LIBS=-lm
+LIBS=-lm -lncurses
 
 SRCS=$(wildcard  src/**/*.c  src/*.c)
 OBJS=$(patsubst  %.c,%.o,$(SRCS))
@@ -12,7 +13,7 @@ OBJS=$(patsubst  %.c,%.o,$(SRCS))
 all: snake
 
 snake: $(OBJS)
-		$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+		$(CC) -o $(ODIR)$@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 clean:

@@ -5,32 +5,51 @@
 
 #define SNAKE_H_
 
-struct snake;
-struct board;
+#define BACKGROUND 1
+#define SNAKE 2
+#define FOOD 3
+#define TEXT 4
 
-struct board * init_board(int height, int width);
+const char *PIECE = "  ";
 
-void draw_board(struct board *b);
-void draw_snake(struct board *b, struct snake *s);
+typedef struct snake snake;
+typedef struct snake_segment snake_segment;
 
-void empty_header(char *line, int width);
-void empty_body(char *line, int width);
-void empty_footer(char *line, int width);
+typedef enum _DIRECTION DIRECTION;
 
-struct _snake
+void init_board(snake *s);
+void init_snake(snake *s);
+void add_food(snake *s);
+void update_snake(snake *s, DIRECTION direction);
+struct snake_segment *new_head(int16_t x, int16_t y, snake_segment *next);
+void draw_end_game(void);
+
+struct snake_segment
 {
-	uint16_t x;
-	uint16_t y;
-	
-	struct _snake *next_segment;
-} snake;
+    int16_t x;
+    int16_t y;
 
-struct board
+    struct snake_segment *next;
+};
+
+struct snake
 {
-	uint16_t height;
-	uint16_t width;
+    uint16_t rows;
+    uint16_t cols;
 
-	char *matrix;
+    uint16_t food_x;
+    uint16_t food_y;
+
+    struct snake_segment *head;
+    struct snake_segment *tail;
+};
+
+enum _DIRECTION
+{
+    N,
+    E,
+    S,
+    W
 };
 
 #endif
