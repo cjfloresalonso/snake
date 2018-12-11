@@ -13,8 +13,9 @@ OBJS=$(patsubst  %.c,%.o,$(SRCS))
 all: snake
 
 snake: $(OBJS)
-		$(CC) -o $(ODIR)/$@ $^ $(CFLAGS) $(LIBS)
+	mkdir -p $(ODIR) 
+	$(CC) -o $(ODIR)/$@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 clean:
-		rm -f $(ODIR)/*.o *~ core snake
+	rm -f $(ODIR)/*.o *~ core snake

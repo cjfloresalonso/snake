@@ -3,7 +3,8 @@ The classic game snake in the terminal.
 
 ## TODO
 - use branches!
-- make fullscreen
+- <s>make fullscreen</s>
+- deal with screen resizing (possibly pause the game)
 - <s>clean up initilisation/end code</s>
 - make snake move on it's own
 - think about if threading is needed
@@ -40,4 +41,4 @@ Move with
  W
 ASD
 ```
-
+Quit with `q`.

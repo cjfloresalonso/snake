@@ -108,8 +108,8 @@ snake *init_snake(void)
     snake_segment *sn0 = new_head(3, 2, sn1);
 
     // initilise snakes values
-    s->rows = 15;
-    s->cols = 20;
+    getmaxyx(stdscr, s->rows, s->cols);
+    s->cols /=  2;
     s->head = sn0;
     s->tail = sn2;
 
