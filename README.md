@@ -2,6 +2,7 @@
 The classic game snake in the terminal.
 
 ## TODO
+- use branches!
 - make fullscreen
 - clean up initilisation/end code
 - make snake move on it's own
@@ -14,6 +15,7 @@ The classic game snake in the terminal.
     - collision detection
     - make snake grow
     - increase snake's speed
+
 
 ## Dependecies
 `ncurses` library:
