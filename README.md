@@ -4,18 +4,24 @@ The classic game snake in the terminal.
 ## TODO
 - use branches!
 - <s>make fullscreen</s>
-- deal with screen resizing (possibly pause the game)
+- deal with screen resizing<s> (possibly pause the game)</s>
 - <s>clean up initilisation/end code</s>
-- make snake move on it's own
-- think about if threading is needed
+- <s>make snake move on it's own</s>
+- <s>think about if threading is needed </s>(it's not)
 - <s>comment and </s>document code
 - write a nice README
 - add main loop
-    - add food 
-    - check snake doesn't leave board
-    - collision detection
-    - make snake grow
+    - <s>add food</s>
+    - <s>check snake doesn't leave board</s>
+    - <s>collision detection</s>
+    - <s>make snake grow</s>
     - increase snake's speed
+- fix death at the borders (too short)
+- <s>score keeping</s>
+- nice death message
+- nice pause message
+- <s>fix collosions of size three</s>
+- what if food spawns of snake?
 
 
 ## Dependecies
@@ -42,3 +48,4 @@ Move with
 ASD
 ```
 Quit with `q`.
+

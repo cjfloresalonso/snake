@@ -18,4 +18,4 @@ snake: $(OBJS)
 
 .PHONY: clean
 clean:
-	rm -f $(ODIR)/*.o *~ core snake
+	rm -f $(ODIR)/* $(BDIR)/* *~ core snake

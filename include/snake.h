@@ -12,17 +12,23 @@
 
 const char *PIECE = "  ";
 
-typedef struct snake snake;
+typedef struct game game;
 typedef struct snake_segment snake_segment;
 
 typedef enum _DIRECTION DIRECTION;
 
 void init_prog(void);
-void init_board(snake *s);
-snake * init_snake(void);
-void add_food(snake *s);
-void update_snake(snake *s, DIRECTION direction);
-struct snake_segment *new_head(int16_t x, int16_t y, snake_segment *next);
+void init_board(game *g);
+game * init_game(void);
+void mainloop(game *g);
+void add_food(game *g);
+void update_snake(game *g, DIRECTION direction);
+void update_food(game *g);
+bool is_collided(game *g);
+void has_collided(game *g);
+struct snake_segment *new_segment(int16_t x, int16_t y, snake_segment *next);
+void pause_game(void);
+void quit(game *g);
 
 struct snake_segment
 {
@@ -32,7 +38,7 @@ struct snake_segment
     struct snake_segment *next;
 };
 
-struct snake
+struct game
 {
     uint16_t rows;
     uint16_t cols;
@@ -40,16 +46,20 @@ struct snake
     uint16_t food_x;
     uint16_t food_y;
 
-    struct snake_segment *head;
-    struct snake_segment *tail;
+    uint8_t grow;
+
+    uint32_t score;
+
+    snake_segment *head;
+    snake_segment *tail;
 };
 
 enum _DIRECTION
 {
-    N,
-    E,
-    S,
-    W
+    N = 'w',
+    E = 'd',
+    S = 's',
+    W = 'a'
 };
 
 #endif

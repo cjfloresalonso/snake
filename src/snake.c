@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
 #include <ncurses.h>
@@ -11,46 +12,64 @@ int main(int argc, char **argv)
     init_prog();
 
     // initilise the game
-    snake *s = init_snake();
-    init_board(s);
-    add_food(s);
+    game *g = init_game();
+    init_board(g);
+    add_food(g);
 
-    // loop for movement
+    refresh();
+
+    mainloop(g);
+
+    exit(EXIT_FAILURE);
+}
+
+void mainloop(game *g)
+{
+    // get initial direction to move in
+    char c = fgetc(stdin);
+
+    // movement loop
     do
     {
-        // get direction to move in
-        attron(COLOR_PAIR(TEXT));
-        char c = fgetc(stdin);
-        attroff(COLOR_PAIR(TEXT));
-
         // deal with input accordingly
         switch (c)
         {
         case 'd':
-            update_snake(s, E);
-            break;
         case 'a':
-            update_snake(s, W);
-            break;
         case 'w':
-            update_snake(s, N);
+        case 's':
+            update_snake(g, c);
             break;
         case 'q':
-        case 'Q':
-            return 1;
-        case 's':
-            update_snake(s, S);
+            quit(g);
             break;
-        default:
+        case 'p':
+        case 'e':
+            pause_game();
+            break;
+        }
+        update_food(g);
+
+        refresh();
+
+        timeout(75);
+
+        // update movement
+        char new_c;
+        switch (new_c = getch())
+        {
+        case 'a':
+        case 's':
+        case 'd':
+        case 'w':
+        case 'q':
+        case 'p':
+        case 'e':
+            c = new_c;
             break;
         }
 
-        // flush the any charecters still in the stdin buffer
-        fflush(stdin);
-
     } while (true);
-
-    exit(EXIT_SUCCESS);
 }
 
 void init_prog(void)
@@ -77,15 +96,15 @@ void init_prog(void)
     atexit((void (*)(void))endwin);
 }
 
-void init_board(snake *s)
+void init_board(game *g)
 {
     // draw background/board
     // TODO: optimise this
     attron(COLOR_PAIR(BACKGROUND));
     move(0, 0);
-    for (int i = 0; i < s->rows; i++)
+    for (int i = 0; i < g->rows; i++)
     {
-        for (int j = 0; j < s->cols; j++)
+        for (int j = 0; j < g->cols; j++)
         {
             addstr(PIECE);
         }
@@ -96,47 +115,79 @@ void init_board(snake *s)
     attroff(COLOR_PAIR(BACKGROUND));
 }
 
-snake *init_snake(void)
+game *init_game(void)
 {
-    // declare snake's memory
-    snake *s = malloc(sizeof(snake));
+    // declare snake'g memory
+    game *g = malloc(sizeof(game));
 
     /// TODO: make random
-    // initilise segments of hte snake's body
-    snake_segment *sn2 = new_head(5, 2, NULL);
-    snake_segment *sn1 = new_head(4, 2, sn2);
-    snake_segment *sn0 = new_head(3, 2, sn1);
+    // initilise segments of the snake'g body
+    snake_segment *seg = new_segment(5, 2, NULL);
 
     // initilise snakes values
-    getmaxyx(stdscr, s->rows, s->cols);
-    s->cols /=  2;
-    s->head = sn0;
-    s->tail = sn2;
+    getmaxyx(stdscr, g->rows, g->cols);
+    g->cols /= 2;
+    g->head = seg;
+    g->tail = seg;
+    g->grow = 0;
+    g->score = 1;
 
     // draw the segments
     // BUG: not getting drawn initially
     attron(COLOR_PAIR(SNAKE));
 
-    for (snake_segment *sptr = s->head;
+    for (snake_segment *sptr = g->head;
          sptr;
          sptr = sptr->next)
     {
         mvaddstr(sptr->y, 2 * sptr->x, PIECE);
     }
 
-    attron(COLOR_PAIR(SNAKE));
+    attroff(COLOR_PAIR(SNAKE));
 
-    // flush buffer
-    refresh();
-
-    // return the snake
-    return s;
+    // return the game
+    return g;
 }
 
-void update_snake(snake *s, DIRECTION direction)
+void update_food(game *g)
+{
+    // check food eaten
+    if (g->food_x == g->head->x &&
+        g->food_y == g->head->y)
+    {
+        add_food(g);
+        g->grow += 2;
+        g->score += 2;
+    }
+}
+
+bool is_collided(game *g)
+{
+    //check border collisions
+    if (g->head->x < 0 || g->head->x >= g->cols ||
+        g->head->y < 0 || g->head->y >= g->cols)
+    {
+        return true;
+    }
+
+    // iterate snake and check collisions
+    for (snake_segment *head = g->head,
+                       *seg = g->head->next ? g->head->next : g->head;
+         seg->next; seg = seg->next)
+    {
+        if (head->x == seg->x && head->y == seg->y)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void update_snake(game *g, DIRECTION direction)
 {
     // error gurad
-    if (!s || !(s->tail))
+    if (!g || !(g->tail))
     {
         // TODO: add error here
         return;
@@ -148,23 +199,23 @@ void update_snake(snake *s, DIRECTION direction)
     switch (direction)
     {
     case N:
-        new_x = s->head->x;
-        new_y = s->head->y - 1;
+        new_x = g->head->x;
+        new_y = g->head->y - 1;
         break;
 
     case E:
-        new_x = s->head->x + 1;
-        new_y = s->head->y;
+        new_x = g->head->x + 1;
+        new_y = g->head->y;
         break;
 
     case S:
-        new_x = s->head->x;
-        new_y = s->head->y + 1;
+        new_x = g->head->x;
+        new_y = g->head->y + 1;
         break;
 
     case W:
-        new_x = s->head->x - 1;
-        new_y = s->head->y;
+        new_x = g->head->x - 1;
+        new_y = g->head->y;
         break;
     default:
         // TODO: error here error no maybe?
@@ -172,38 +223,69 @@ void update_snake(snake *s, DIRECTION direction)
         return;
     }
 
+    // ignore opposite change of directions
+    if (g->head->next && new_x == g->head->next->x && new_y == g->head->next->y)
+    {
+        switch (direction)
+        {
+        case N:
+            update_snake(g, S);
+            break;
+        case S:
+            update_snake(g, N);
+            break;
+        case E:
+            update_snake(g, W);
+            break;
+        case W:
+            update_snake(g, E);
+            break;
+        }
+        return;
+    }
+
     // add head
-    snake_segment *head = new_head(new_x, new_y, s->head);
-    s->head = head;
+    snake_segment *head = new_segment(new_x, new_y, g->head);
+    g->head = head;
+
+    if (is_collided(g))
+    {
+        has_collided(g);
+    }
 
     // draw head
     attron(COLOR_PAIR(SNAKE));
-    mvaddstr(s->head->y, 2 * s->head->x, PIECE);
+    mvaddstr(g->head->y, 2 * g->head->x, PIECE);
     attroff(COLOR_PAIR(SNAKE));
 
     // undrawn tail
-    attron(COLOR_PAIR(BACKGROUND));
-    mvaddstr(s->tail->y, (2 * s->tail->x), PIECE);
-    attroff(COLOR_PAIR(BACKGROUND));
+    if (g->grow < 1)
+    {
+        attron(COLOR_PAIR(BACKGROUND));
+        mvaddstr(g->tail->y, (2 * g->tail->x), PIECE);
+        attroff(COLOR_PAIR(BACKGROUND));
 
-    // remove tail
-    snake_segment *new_last = s->head;
+        // remove tail
+        snake_segment *new_last = g->head;
 
-    for (new_last = s->head; new_last && new_last->next &&
-            new_last->next->next;
-        new_last = new_last->next);
+        for (new_last = g->head; new_last && new_last->next &&
+                                 new_last->next->next;
+             new_last = new_last->next)
+            ;
 
-    free(s->tail);
+        free(g->tail);
 
-    // udpate tail
-    s->tail = new_last;
-    s->tail->next = NULL;
-
-    // draw window
-    refresh();
+        // udpate tail
+        g->tail = new_last;
+        g->tail->next = NULL;
+    }
+    else
+    {
+        g->grow--;
+    }
 }
 
-snake_segment *new_head(int16_t x, int16_t y, snake_segment *next)
+snake_segment *new_segment(int16_t x, int16_t y, snake_segment *next)
 {
     // allocate the segments memory
     snake_segment *new = malloc(sizeof(snake_segment));
@@ -217,17 +299,36 @@ snake_segment *new_head(int16_t x, int16_t y, snake_segment *next)
     return new;
 }
 
-void add_food(snake *s)
+void add_food(game *g)
 {
     // set position
-    s->food_x = rand() % s->cols;
-    s->food_y = rand() % s->rows;
+    g->food_x = rand() % g->cols;
+    g->food_y = rand() % g->rows;
 
     // draw food
     attron(COLOR_PAIR(FOOD));
-    mvaddstr(s->food_y, 2 * s->food_x, PIECE);
+    mvaddstr(g->food_y, 2 * g->food_x, PIECE);
     attroff(COLOR_PAIR(FOOD));
+}
 
-    // flush screen
-    refresh();
+void has_collided(game *g)
+{
+    mvprintw(g->rows / 2, 2 * (g->cols / 2) - 30 / 2,
+             "You died. Riiiiip. Score: %d", g->score);
+    timeout(10000);
+    getch();
+    quit(g);
+}
+
+void pause_game()
+{
+    // TODO: print pretty pause screen
+    timeout(0);
+    getch();
+}
+
+void quit(game *g)
+{
+    // TODO: free memory
+    exit(EXIT_SUCCESS);
 }
