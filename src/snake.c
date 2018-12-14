@@ -12,8 +12,8 @@ int main(int argc, char **argv)
     init_prog();
 
     // initilise the game
+    init_board(NULL);
     game *g = init_game();
-    init_board(g);
     add_food(g);
 
     refresh();
@@ -26,11 +26,29 @@ int main(int argc, char **argv)
 void mainloop(game *g)
 {
     // get initial direction to move in
-    char c = fgetc(stdin);
+    char prev_move;
 
     // movement loop
     do
     {
+        // update movement
+        char c;
+        timeout(75);
+        switch (c = getch())
+        {
+        case 'a':
+        case 's':
+        case 'd':
+        case 'w':
+            prev_move = c;
+            break;
+        case 'q':
+        case 'p':
+            break;
+        default:
+            c = prev_move;
+        }
+
         // deal with input accordingly
         switch (c)
         {
@@ -45,29 +63,15 @@ void mainloop(game *g)
             break;
         case 'p':
         case 'e':
-            pause_game();
+            pause_game(g);
             break;
         }
+
+        // check and update food accordingly
         update_food(g);
 
+        // draw the game
         refresh();
-
-        timeout(75);
-
-        // update movement
-        char new_c;
-        switch (new_c = getch())
-        {
-        case 'a':
-        case 's':
-        case 'd':
-        case 'w':
-        case 'q':
-        case 'p':
-        case 'e':
-            c = new_c;
-            break;
-        }
 
     } while (true);
 }
@@ -76,9 +80,11 @@ void init_prog(void)
 {
     // initilise the tui
     initscr();
+    refresh();
 
     cbreak();
     noecho();
+    keypad(stdscr, TRUE);
 
     curs_set(0);
     start_color();
@@ -98,21 +104,17 @@ void init_prog(void)
 
 void init_board(game *g)
 {
-    // draw background/board
-    // TODO: optimise this
-    attron(COLOR_PAIR(BACKGROUND));
-    move(0, 0);
-    for (int i = 0; i < g->rows; i++)
+    // set background colour
+    bkgd(COLOR_PAIR(BACKGROUND));
+
+    // darken last column if applicable
+    attron(COLOR_PAIR(TEXT));
+    for (int i = 0, width = getmaxx(stdscr), odd = width % 2;
+         odd && i < getmaxy(stdscr); i++)
     {
-        for (int j = 0; j < g->cols; j++)
-        {
-            addstr(PIECE);
-        }
-
-        addch('\n');
+        mvaddch(i, width - 1, ' ');
     }
-
-    attroff(COLOR_PAIR(BACKGROUND));
+    attroff(COLOR_PAIR(TEXT));
 }
 
 game *init_game(void)
@@ -120,30 +122,30 @@ game *init_game(void)
     // declare snake'g memory
     game *g = malloc(sizeof(game));
 
-    /// TODO: make random
-    // initilise segments of the snake'g body
-    snake_segment *seg = new_segment(5, 2, NULL);
-
     // initilise snakes values
     getmaxyx(stdscr, g->rows, g->cols);
     g->cols /= 2;
+
+    // initilise segments of the snake'g body
+    snake_segment *seg = new_segment(
+        rand() % g->cols,
+        rand() % g->rows,
+        NULL);
+
     g->head = seg;
     g->tail = seg;
+
     g->grow = 0;
+
     g->score = 1;
+    g->start = time(NULL);
 
-    // draw the segments
-    // BUG: not getting drawn initially
+    // draw the segment
     attron(COLOR_PAIR(SNAKE));
-
-    for (snake_segment *sptr = g->head;
-         sptr;
-         sptr = sptr->next)
-    {
-        mvaddstr(sptr->y, 2 * sptr->x, PIECE);
-    }
-
+    mvaddstr(g->head->y, 2 * g->head->x, PIECE);
     attroff(COLOR_PAIR(SNAKE));
+
+    refresh();
 
     // return the game
     return g;
@@ -155,7 +157,10 @@ void update_food(game *g)
     if (g->food_x == g->head->x &&
         g->food_y == g->head->y)
     {
+        // readd food
         add_food(g);
+
+        // udpate game state
         g->grow += 2;
         g->score += 2;
     }
@@ -165,7 +170,7 @@ bool is_collided(game *g)
 {
     //check border collisions
     if (g->head->x < 0 || g->head->x >= g->cols ||
-        g->head->y < 0 || g->head->y >= g->cols)
+        g->head->y < 0 || g->head->y >= g->rows)
     {
         return true;
     }
@@ -248,6 +253,7 @@ void update_snake(game *g, DIRECTION direction)
     snake_segment *head = new_segment(new_x, new_y, g->head);
     g->head = head;
 
+    // deal with collisions
     if (is_collided(g))
     {
         has_collided(g);
@@ -301,9 +307,24 @@ snake_segment *new_segment(int16_t x, int16_t y, snake_segment *next)
 
 void add_food(game *g)
 {
+    // get new food positions
+    uint16_t food_x = rand() % g->cols;
+    uint16_t food_y = rand() % g->rows;
+
+    // ensure food not drawn on snake
+    for (snake_segment *s = g->head; s->next; s = s->next)
+    {
+        if (food_x == s->x &&
+            food_y == s->y)
+        {
+            add_food(g);
+            return;
+        }
+    }
+
     // set position
-    g->food_x = rand() % g->cols;
-    g->food_y = rand() % g->rows;
+    g->food_x = food_x;
+    g->food_y = food_y;
 
     // draw food
     attron(COLOR_PAIR(FOOD));
@@ -313,22 +334,120 @@ void add_food(game *g)
 
 void has_collided(game *g)
 {
+    // print death screen
+    attron(COLOR_PAIR(TEXT));
     mvprintw(g->rows / 2, 2 * (g->cols / 2) - 30 / 2,
              "You died. Riiiiip. Score: %d", g->score);
+    attroff(COLOR_PAIR(TEXT));
+
+    refresh();
     timeout(10000);
     getch();
+
     quit(g);
 }
 
-void pause_game()
+int64_t time_elapsed(game *g)
 {
-    // TODO: print pretty pause screen
-    timeout(0);
-    getch();
+    if (!g || !g->start)
+    {
+        // TODO:  some sort of error here
+        exit(1);
+    }
+
+    return (int64_t)(time(NULL) - g->start);
+}
+
+void pause_game(game *g)
+{
+    // get time paused
+    time_t time_paused = time(NULL);
+
+    // create and configure pause screen
+    WINDOW *pause_window = newwin(
+        10, 40,
+        getmaxy(stdscr) / 2 - 10 / 2,
+        getmaxx(stdscr) / 2 - 40 / 2);
+
+    wbkgd(pause_window, COLOR_PAIR(TEXT));
+    werase(pause_window);
+
+    // write message to screen
+    mvwaddstr(pause_window, 1, 1, "  __                ___               \n");
+    mvwaddstr(pause_window, 2, 1, " / _| _    _ _  _  | o \\ _    _  _  ||\n");
+    mvwaddstr(pause_window, 3, 1,
+              "( |_n/o\\ |/ \\ \\/o\\ |  _//o\\|U(c'/o\\/o|\n");
+    mvwaddstr(pause_window, 4, 1,
+              " \\__/\\_,]L_n_n|\\(  |_|  \\_,]_|_)\\( \\_|\n");
+
+    mvwaddstr(pause_window, 7, 3, "Press p to continue");
+    mvwaddstr(pause_window, 8, 6, "or q to quit");
+
+    // show pause screen
+    wrefresh(pause_window);
+
+    // wait for unpause key
+    timeout(-1);
+    int c;
+    while ((c = getch()))
+    {
+        if (c == 'p')
+        {
+            break;
+        }
+        else if (c == 'q')
+        {
+            quit(g);
+        }
+    }
+
+    /* 
+     * clear pause window
+     * by
+     * setting the background colour then filling the window with blanks
+     */
+    wbkgd(pause_window, COLOR_PAIR(BACKGROUND));
+    werase(pause_window);
+
+    // show changes
+    wrefresh(pause_window);
+
+    // delete pause window
+    delwin(pause_window);
+
+    // restore game
+    wrefresh(stdscr);
+
+    // remove time paused from start
+    g->start += time(NULL) - time_paused;
+}
+
+void free_game(game *g)
+{
+    if (!g)
+    {
+        return;
+    }
+
+    // free memory
+    snake_segment *prev = g->head;
+    snake_segment *sptr = prev->next;
+
+    while (sptr)
+    {
+        free(prev);
+        prev = sptr;
+        sptr = sptr->next;
+    }
+
+    free(prev);
+
+    g = NULL;
 }
 
 void quit(game *g)
 {
-    // TODO: free memory
+    free_game(g);
+
     exit(EXIT_SUCCESS);
 }
