@@ -18,16 +18,23 @@ typedef struct snake_segment snake_segment;
 
 typedef enum _DIRECTION DIRECTION;
 
-void init_prog(void);
-void init_board(game *g);
-game * init_game(void);
+// model/controller functions
 void mainloop(game *g);
+void init_prog(void);
+game * init_game(void);
 void add_food(game *g);
 void update_snake(game *g, DIRECTION direction);
 void update_food(game *g);
 bool is_collided(game *g);
-void has_collided(game *g);
 struct snake_segment *new_segment(int16_t x, int16_t y, snake_segment *next);
+
+// view functions
+void init_board(game *g);
+void draw_snake(snake_segment *head, int16_t count, int32_t colour);
+void draw_food(game *g);
+void has_collided(game *g);
+WINDOW *new_pause_window(game *g);
+void kill_pause_window(WINDOW *pwindow);
 int64_t time_elapsed(game *g);
 void pause_game(game *g);
 void quit(game *g);

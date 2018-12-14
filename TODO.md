@@ -26,4 +26,6 @@
 - use a window* in game g instead of stdscr
 - check window sizing
 - usage output/help
-
+- error gaurd all functions (NULL ptrs, etc.)
+- add start window pop-up with instructions (make sure food does not spawn behind it)
+- add errors with errno.h

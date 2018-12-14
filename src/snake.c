@@ -23,6 +23,9 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
 }
 
+/******************************
+ * Model/Controller Fucntions *
+ *****************************/
 void mainloop(game *g)
 {
     // get initial direction to move in
@@ -102,21 +105,6 @@ void init_prog(void)
     atexit((void (*)(void))endwin);
 }
 
-void init_board(game *g)
-{
-    // set background colour
-    bkgd(COLOR_PAIR(BACKGROUND));
-
-    // darken last column if applicable
-    attron(COLOR_PAIR(TEXT));
-    for (int i = 0, width = getmaxx(stdscr), odd = width % 2;
-         odd && i < getmaxy(stdscr); i++)
-    {
-        mvaddch(i, width - 1, ' ');
-    }
-    attroff(COLOR_PAIR(TEXT));
-}
-
 game *init_game(void)
 {
     // declare snake'g memory
@@ -141,11 +129,7 @@ game *init_game(void)
     g->start = time(NULL);
 
     // draw the segment
-    attron(COLOR_PAIR(SNAKE));
-    mvaddstr(g->head->y, 2 * g->head->x, PIECE);
-    attroff(COLOR_PAIR(SNAKE));
-
-    refresh();
+    draw_snake(g->head, -1, SNAKE);
 
     // return the game
     return g;
@@ -260,16 +244,13 @@ void update_snake(game *g, DIRECTION direction)
     }
 
     // draw head
-    attron(COLOR_PAIR(SNAKE));
-    mvaddstr(g->head->y, 2 * g->head->x, PIECE);
-    attroff(COLOR_PAIR(SNAKE));
+    draw_snake(g->head, 1, SNAKE);
 
     // undrawn tail
     if (g->grow < 1)
     {
-        attron(COLOR_PAIR(BACKGROUND));
-        mvaddstr(g->tail->y, (2 * g->tail->x), PIECE);
-        attroff(COLOR_PAIR(BACKGROUND));
+        draw_snake(g->tail, 1, BACKGROUND);
+
 
         // remove tail
         snake_segment *new_last = g->head;
@@ -327,9 +308,7 @@ void add_food(game *g)
     g->food_y = food_y;
 
     // draw food
-    attron(COLOR_PAIR(FOOD));
-    mvaddstr(g->food_y, 2 * g->food_x, PIECE);
-    attroff(COLOR_PAIR(FOOD));
+    draw_food(g);
 }
 
 void has_collided(game *g)
@@ -363,25 +342,7 @@ void pause_game(game *g)
     // get time paused
     time_t time_paused = time(NULL);
 
-    // create and configure pause screen
-    WINDOW *pause_window = newwin(
-        10, 40,
-        getmaxy(stdscr) / 2 - 10 / 2,
-        getmaxx(stdscr) / 2 - 40 / 2);
-
-    wbkgd(pause_window, COLOR_PAIR(TEXT));
-    werase(pause_window);
-
-    // write message to screen
-    mvwaddstr(pause_window, 1, 1, "  __                ___               \n");
-    mvwaddstr(pause_window, 2, 1, " / _| _    _ _  _  | o \\ _    _  _  ||\n");
-    mvwaddstr(pause_window, 3, 1,
-              "( |_n/o\\ |/ \\ \\/o\\ |  _//o\\|U(c'/o\\/o|\n");
-    mvwaddstr(pause_window, 4, 1,
-              " \\__/\\_,]L_n_n|\\(  |_|  \\_,]_|_)\\( \\_|\n");
-
-    mvwaddstr(pause_window, 7, 3, "Press p to continue");
-    mvwaddstr(pause_window, 8, 6, "or q to quit");
+    WINDOW *pause_window = new_pause_window(g);
 
     // show pause screen
     wrefresh(pause_window);
@@ -401,19 +362,7 @@ void pause_game(game *g)
         }
     }
 
-    /* 
-     * clear pause window
-     * by
-     * setting the background colour then filling the window with blanks
-     */
-    wbkgd(pause_window, COLOR_PAIR(BACKGROUND));
-    werase(pause_window);
-
-    // show changes
-    wrefresh(pause_window);
-
-    // delete pause window
-    delwin(pause_window);
+    kill_pause_window(pause_window);
 
     // restore game
     wrefresh(stdscr);
@@ -451,3 +400,98 @@ void quit(game *g)
 
     exit(EXIT_SUCCESS);
 }
+
+/******************
+ * View Functions *
+ *****************/
+
+void init_board(game *g)
+{
+    // set background colour
+    bkgd(COLOR_PAIR(BACKGROUND));
+
+    // darken last column if applicable
+    attron(COLOR_PAIR(TEXT));
+    for (int i = 0, width = getmaxx(stdscr), odd = width % 2;
+         odd && i < getmaxy(stdscr); i++)
+    {
+        mvaddch(i, width - 1, ' ');
+    }
+    attroff(COLOR_PAIR(TEXT));
+}
+
+void draw_snake(snake_segment *head, int16_t count, int32_t colour)
+{
+    // error gaurd
+    if (!head)
+    {
+        // some kind error here
+        return;
+    }
+
+    // set colour
+    attron(COLOR_PAIR(colour));
+
+    // TODO: check for an error
+
+    // iterate snake and draw segments
+    snake_segment *s = head;
+    for (int32_t i = 0; s && (count < 0 || i < count); s = s->next, i++)
+    {
+        mvaddstr(s->y, 2 * s->x, PIECE);
+    }
+
+    // unset colour
+    attroff(COLOR_PAIR(colour));
+}
+
+void draw_food(game *g)
+{
+    // draw game's food 
+    attron(COLOR_PAIR(FOOD));
+    mvaddstr(g->food_y, 2 * g->food_x, PIECE);
+    attroff(COLOR_PAIR(FOOD));
+}
+
+WINDOW *new_pause_window(game *g)
+{
+    // create and configure pause screen
+    WINDOW *pause_window = newwin(
+        10, 40,
+        getmaxy(stdscr) / 2 - 10 / 2,
+        getmaxx(stdscr) / 2 - 40 / 2);
+
+    wbkgd(pause_window, COLOR_PAIR(TEXT));
+    werase(pause_window);
+
+    // write message to screen
+    mvwaddstr(pause_window, 1, 1, "  __                ___               \n");
+    mvwaddstr(pause_window, 2, 1, " / _| _    _ _  _  | o \\ _    _  _  ||\n");
+    mvwaddstr(pause_window, 3, 1,
+              "( |_n/o\\ |/ \\ \\/o\\ |  _//o\\|U(c'/o\\/o|\n");
+    mvwaddstr(pause_window, 4, 1,
+              " \\__/\\_,]L_n_n|\\(  |_|  \\_,]_|_)\\( \\_|\n");
+
+    mvwaddstr(pause_window, 7, 3, "Press p to continue");
+    mvwaddstr(pause_window, 8, 6, "or q to quit");
+
+    return pause_window;
+}
+
+void kill_pause_window(WINDOW *pwindow)
+{
+    /* 
+     * clear pause window
+     * by
+     * setting the background colour then filling the window with blanks
+     */
+    wbkgd(pwindow, COLOR_PAIR(BACKGROUND));
+    werase(pwindow);
+
+    // show changes
+    wrefresh(pwindow);
+
+    // delete pause window
+    delwin(pwindow);
+}
+
