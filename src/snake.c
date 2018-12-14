@@ -29,20 +29,39 @@ int main(int argc, char **argv)
 void mainloop(game *g)
 {
     // get initial direction to move in
-    char prev_move;
+    int32_t prev_move = '\0';
 
     // movement loop
     do
     {
         // update movement
-        char c;
         timeout(75);
-        switch (c = getch())
+        int32_t c = getch();
+
+
+        // translate alias keys
+        switch (c)
         {
-        case 'a':
-        case 's':
-        case 'd':
         case 'w':
+            c = KEY_UP;
+            break;
+        case 's':
+            c = KEY_DOWN;
+            break;
+        case 'a':
+            c = KEY_LEFT;
+            break;
+        case 'd':
+            c = KEY_RIGHT;
+            break;
+        }
+
+        switch (c)
+        {
+        case KEY_LEFT:
+        case KEY_DOWN:
+        case KEY_RIGHT:
+        case KEY_UP:
             prev_move = c;
             break;
         case 'q':
@@ -52,13 +71,14 @@ void mainloop(game *g)
             c = prev_move;
         }
 
+
         // deal with input accordingly
         switch (c)
         {
-        case 'd':
-        case 'a':
-        case 'w':
-        case 's':
+        case KEY_RIGHT:
+        case KEY_LEFT:
+        case KEY_UP:
+        case KEY_DOWN:
             update_snake(g, c);
             break;
         case 'q':
@@ -250,7 +270,6 @@ void update_snake(game *g, DIRECTION direction)
     if (g->grow < 1)
     {
         draw_snake(g->tail, 1, BACKGROUND);
-
 
         // remove tail
         snake_segment *new_last = g->head;
@@ -447,7 +466,7 @@ void draw_snake(snake_segment *head, int16_t count, int32_t colour)
 
 void draw_food(game *g)
 {
-    // draw game's food 
+    // draw game's food
     attron(COLOR_PAIR(FOOD));
     mvaddstr(g->food_y, 2 * g->food_x, PIECE);
     attroff(COLOR_PAIR(FOOD));
@@ -494,4 +513,3 @@ void kill_pause_window(WINDOW *pwindow)
     // delete pause window
     delwin(pwindow);
 }
-

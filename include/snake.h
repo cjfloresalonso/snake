@@ -74,10 +74,10 @@ struct game
 
 enum _DIRECTION
 {
-    N = 'w',
-    E = 'd',
-    S = 's',
-    W = 'a'
+    N = KEY_UP,
+    E = KEY_RIGHT,
+    S = KEY_DOWN,
+    W = KEY_LEFT
 };
 
 #endif
