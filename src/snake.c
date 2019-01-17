@@ -56,14 +56,13 @@ void mainloop(game *g)
             break;
         }
 
+        // repeat previous chars if needed
         switch (c)
         {
         case KEY_LEFT:
         case KEY_DOWN:
         case KEY_RIGHT:
         case KEY_UP:
-            prev_move = c;
-            break;
         case 'q':
         case 'p':
             break;
@@ -79,6 +78,10 @@ void mainloop(game *g)
         case KEY_LEFT:
         case KEY_UP:
         case KEY_DOWN:
+            // update previous move
+            prev_move = c;
+
+            // update snake
             update_snake(g, c);
             break;
         case 'q':
@@ -333,10 +336,8 @@ void add_food(game *g)
 void has_collided(game *g)
 {
     // print death screen
-    attron(COLOR_PAIR(TEXT));
-    mvprintw(g->rows / 2, 2 * (g->cols / 2) - 30 / 2,
-             "You died. Riiiiip. Score: %d", g->score);
-    attroff(COLOR_PAIR(TEXT));
+    WINDOW* death = new_death_window(g);
+    wrefresh(death);
 
     refresh();
     timeout(10000);
@@ -381,7 +382,7 @@ void pause_game(game *g)
         }
     }
 
-    kill_pause_window(pause_window);
+    kill_popup_window(pause_window);
 
     // restore game
     wrefresh(stdscr);
@@ -472,16 +473,24 @@ void draw_food(game *g)
     attroff(COLOR_PAIR(FOOD));
 }
 
-WINDOW *new_pause_window(game *g)
+WINDOW *new_popup_window(void)
 {
-    // create and configure pause screen
-    WINDOW *pause_window = newwin(
+    // create and configure window
+    WINDOW *popup_window = newwin(
         10, 40,
         getmaxy(stdscr) / 2 - 10 / 2,
         getmaxx(stdscr) / 2 - 40 / 2);
 
-    wbkgd(pause_window, COLOR_PAIR(TEXT));
-    werase(pause_window);
+    wbkgd(popup_window, COLOR_PAIR(TEXT));
+    werase(popup_window);
+
+    return popup_window;
+}
+
+WINDOW *new_pause_window(game *g)
+{
+    // create and configure window
+    WINDOW *pause_window = new_popup_window();
 
     // write message to screen
     mvwaddstr(pause_window, 1, 1, "  __                ___               \n");
@@ -497,7 +506,23 @@ WINDOW *new_pause_window(game *g)
     return pause_window;
 }
 
-void kill_pause_window(WINDOW *pwindow)
+WINDOW *new_death_window(game *g)
+{
+    // create and configure window
+    WINDOW *death_window = new_popup_window();
+
+    // write message to screen
+    mvwaddstr(death_window, 2, 1, " __             _          ");
+    mvwaddstr(death_window, 3, 1, "/__ _ __  _    / \\    _  __");
+    mvwaddstr(death_window, 4, 1, "\\_|(_||||(/_   \\_/\\_/(/_ | ");
+
+    mvwaddstr(death_window, 7, 3, "Press p to continue");
+    mvwaddstr(death_window, 8, 6, "or q to quit");
+
+    return death_window;
+}
+
+void kill_popup_window(WINDOW *pwindow)
 {
     /* 
      * clear pause window

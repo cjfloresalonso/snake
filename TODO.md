@@ -21,7 +21,7 @@
 - <s>what if food spawns of snake?</s>
 - keep track of time and use for difficulty
 - <s>write `quit` function instead of `free_game(g)</s>
-- seperate all view functoins from model/controller fucntions
+- <s>seperate all view functoins from model/controller fucntions</s>
 - use on_exit for cleanup functions?
 - use a window* in game g instead of stdscr
 - check window sizing
@@ -29,3 +29,4 @@
 - error gaurd all functions (NULL ptrs, etc.)
 - add start window pop-up with instructions (make sure food does not spawn behind it)
 - add errors with errno.h
+- change some `void`fucntions to return something where it makes sense
